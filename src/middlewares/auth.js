@@ -1,18 +1,27 @@
-const adminAuth = (req, res, next) => {
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
-    console.log("This is admin authentication middleware");
-    const token = 'abc';
-    const isTokenValid = token === 'abc';
-    if (isTokenValid) {
+userAuth = async (req, res, next) => {
+    try {
+        const { token } = req.cookies;
+        console.log('token : : :', token)
+        if (!token) {
+            throw new Error('Unauthorized!');
+        }
+        const decodedToken = jwt.verify(token, 'DEV@Tinder$90');
+        const { _id } = decodedToken;
+        const user = await User.findById(_id);
+        console.log('user : : :', user)
+        if (!user) {
+            throw new Error('User not found!');
+        }
+        req.user = user;
         next();
-    } else {
-        res.send('You are not authorized');
     }
+    catch (error) {
+        res.status(400).json({ message: 'Invalid token!' });
+    }
+
 };
 
-userAuth = (req, res, next) => {
-    console.log("This is user authentication middleware");
-    next();
-};
-
-module.exports = { adminAuth, userAuth };
+module.exports = { userAuth };

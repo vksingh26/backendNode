@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
 const User = require('../src/models/user.js');
 const { validateSignUpData } = require('./utils/validation');
+const { userAuth } = require('./middlewares/auth');
 
 const app = express();
 app.use(express.json());
@@ -30,8 +31,8 @@ app.post("/signup", async (req, res) => {
 
 
 app.post("/signin", async (req, res) => {
-    const { email, password } = req.body;
     try {
+        const { email, password } = req.body;
         if (!email || !password) {
             throw new Error('Please provide email and password');
         }
@@ -40,13 +41,28 @@ app.post("/signin", async (req, res) => {
         if (!user) {
             throw new Error('Invalid credentials');
         }
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.verifyPassword(password); //putting compare password in userSchema because its related to user and we are using this method to verify password of the user
+        console.log('isPasswordValid : : :', isPasswordValid);
         if (!isPasswordValid) {
             throw new Error('Invalid credentials');
         }
+
+        const token = await user.getJWT(); // putting generate token in userSchema because it related to user and we are using this method to generate token for the user
+        console.log('token : : :', token);
+        res.cookie('token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.status(200).json({ message: 'User signed in successfully' });
     } catch (err) {
         res.status(400).send('Error in user signin: ' + err);
+    }
+});
+
+app.get('/profile', userAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        return res.status(200).json(user);
+    }
+    catch (err) {
+        res.status(400).send('Error in fetching profile: ' + err);
     }
 });
 
