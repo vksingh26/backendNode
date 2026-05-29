@@ -19,10 +19,27 @@ const userSchema = new mongoose.Schema({
         max: 50,
         trim: true,
     },
+    age: {
+        type: Number,
+        min: 18,
+        max: 99,
+        trim: true,
+    },
+    gender: {
+        type: String,
+        required: true,
+        enum: { values: ['male', 'female', 'other'], message: '{value} is an invalid gender' },
+        trim: true,
+    },
+    aboutMe: {
+        type: String,
+        trim: true,
+        max: 500,
+    },
     email: {
         type: String,
         required: true,
-        unique: true,
+        unique: true, //this will create indexing automatically in mongodb, if unique is not there we have to manually create index using 'index:true'
         lowercase: true,
         trim: true,
         validate(value) {
@@ -50,6 +67,7 @@ const userSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+userSchema.index({ firstName: 1, lastName: 1 });
 userSchema.methods.verifyPassword = async function (userEnteredPassword) {
     const user = this;
     const passwordHash = user.password;
